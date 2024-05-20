@@ -1,105 +1,48 @@
-import React, { useState } from 'react'
-import './Home.css'
-import axios from 'axios'
-export const Home = () => {
-    const token = localStorage.getItem("jwt")
-    const [task,setTask] = useState({
-        task:"",
-        duedate : ''
-    })
-    const handleChange = (e)=>{
-        const {name,value} = e.target
-        setTask({
-            ...task,
-            [name]:value,
-        })
-    }
-    const addTask = async ()=>{
-        try {
-            console.log(task)
-            const response = await axios.post("http://localhost:5001/api/list",task,{
-                headers:{
-                    'Authorization': `Bearer ${token}`
-                }
-            })
-            console.log(response.data)
-        }
-        catch (error) {
-            if (error.response && error.response.status === 400) {
-              alert(error.response.data.message)
-            } else {
-              console.error('Error:', error);
-            }
-        }
-    }
+import React, { useEffect, useState } from 'react';
+import './Home.css';
+import axios from 'axios';
+import Input from '../Components/Input';
+import TaskList from '../Components/TaskList';
 
-    const [isChecked, setIsChecked] = useState(false);
-    const handleCheckboxChange = async (event) => {
-        const youSure = confirm("are you sure ")
-        if(youSure){
-            const response = await axios.post("http://localhost:5001/api/list",task,{
-                headers:{
-                    'Authorization': `Bearer ${token}`,
-                    "_id" :"djfd"
+export const Context = React.createContext();
+
+export const Home = () => {
+    const [listTask, setListTask] = useState([]);
+    const token = localStorage.getItem("jwt");
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const response = await axios.get("http://localhost:5001/api/list", {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                setListTask(response.data);
+            } catch (error) {
+                if (error.response && error.response.status === 400) {
+                    alert(error.response.data.message);
+                } else {
+                    console.error('Error:', error);
                 }
-            })
-        }
-      };
-    const handelEdit = () =>{
-        
-    }
-  return (
-    <>
-    <div className="container">
-        <div className='task_writing_container'>
-            <div className='text_area'>
-            <input 
-                type='text' 
-                placeholder='Enter Task...'
-                name = "task"
-                value={task.task}
-                onChange={handleChange}
-            />
-            </div>
-            <input
-                type="date" 
-                id='date'
-                name="duedate" 
-                onChange={handleChange} 
-            />
-            <button onClick={addTask} className='task_btn'>Add task</button>
-        </div>
-        <div className='to_do_list_container'>
-            <div className='task_container'>
-                <input
-                    className='checkbox'
-                    type="checkbox"
-                    checked={isChecked}
-                    onChange={handleCheckboxChange}
-                />
-                <div className='list_task_container'>
-                    <h1>abc</h1>
-                    <h2>Due Date:123</h2>
+            }
+        };
+        fetchData();
+    }, []);
+
+
+    return (
+        <>
+            <Context.Provider value={{token ,setListTask}}>
+                <div className="container">
+                    <Input />
+                    <div className='to_do_list_container'>
+                        {listTask && listTask.map(task => (
+                            <TaskList key={task._id} taskId={task._id} task={task.title} duedate={task.duedate} />
+                        ))}
+                    </div>
                 </div>
-                <button onClick={handelEdit}>Edit</button>
-                <button onClick={handleCheckboxChange}>Delete</button>
-            </div>
-            <div className='task_container'>
-                <input
-                    className='checkbox'
-                    type="checkbox"
-                    checked={isChecked}
-                    onChange={handleCheckboxChange}
-                />
-                <div className='list_task_container'>
-                    <h1>def</h1>
-                    <h2>Due Date:456</h2>
-                </div>
-                <button onClick={handelEdit}>Edit</button>
-                <button onClick={handleCheckboxChange}>Delete</button>
-            </div>
-        </div>
-    </div>
-    </>
-  )
-}
+            </Context.Provider>
+        </>
+    );
+};
